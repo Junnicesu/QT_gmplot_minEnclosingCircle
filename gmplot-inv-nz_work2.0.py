@@ -5,9 +5,22 @@ import urllib.request, json
 import random
 import matplotlib.colors as mcolors
 
-with urllib.request.urlopen(r"http://developer.kensnz.com/getlocdata") as url:
-    geoData = json.loads(url.read().decode()) # a list of dict 
-    # {"id":"419","userid":"15","latitude":"37.421798","longitude":"-122.0841619","description":"lab","created_at":"2019-11-06 21:44:45","updated_at":"2019-11-06 21:44:45"},
+def reqAndSaveDataPoints():
+    geoData = []
+    with urllib.request.urlopen(r"http://developer.kensnz.com/getlocdata") as url:
+        geoDataStr = url.read().decode()
+        f = open("geo_locals.json", 'w')
+        f.write(geoDataStr)
+        f.close()
+        geoData = json.loads(geoDataStr) # a list of dict 
+        # {"id":"419","userid":"15","latitude":"37.421798","longitude":"-122.0841619","description":"lab","created_at":"2019-11-06 21:44:45","updated_at":"2019-11-06 21:44:45"},
+    return geoData
+
+def loadDataPoints():
+    geoData = []
+    with open(r'geo_locals.json', 'r') as file:
+        geoData = json.loads(file.read().replace('/n', ''))
+    return geoData
 
 colorNames = [name  for name, color in mcolors.CSS4_COLORS.items()]
 def random_color():
@@ -16,7 +29,8 @@ def random_color():
     # return '#{:02x}{:02x}{:02x}'.format(t[0], t[1], t[2])
     return colorNames[random.randrange(0, 148)]
 
-def getDataByUserIds(ids):
+def getDataByUserIds(ids, geoLocations):
+    geoData = geoLocations
     retDataDict = {}
     for id in ids:
         id = id.lstrip().rstrip()
@@ -45,6 +59,18 @@ def haversine(coord1, coord2):
 
 
 def main():
+    geoData = []
+    try:
+        geoData = loadDataPoints()
+        if len(geoData) == 0:
+            geoData = reqAndSaveDataPoints()
+    except FileNotFoundError:
+        geoData = reqAndSaveDataPoints()
+    except:
+        e = sys.exc_info()[0]
+        print("sys error: \n{}".format(e))
+        sys.exit(-1)
+
     useridSet = set()
     for data in geoData:
         useridSet.add(data['userid'])
@@ -57,7 +83,7 @@ def main():
     while line != 'q':
         strParts = line.split(',') #sj!!! might be ' 15'
         parts = [ p.lstrip().rstrip() for p in strParts]          
-        dataDictForDraw = getDataByUserIds(parts) #dict of list of dict
+        dataDictForDraw = getDataByUserIds(parts, geoData) #dict of list of dict
         # print(dataDictForDraw) #sjdb
         sCmd = input("\nDo you want to draw an enclosing circle(c) or a polygon(p), (q) for quit?\n")
         while sCmd.rstrip().lstrip() != 'q':
