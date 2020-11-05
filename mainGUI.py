@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         self.geoData = [] #sj
         self.userIds = set() #sj userid set
         self.checkGeoData() #sj todo. check the json file exist, if not request online.
-        self.updateUserids() #sj todo
+        self.updateUserids() #sj todo, to update the GUI interface to let user be able to select userid
         self.isSelectionChanged = False 
     
         self.browser = QWebEngineView()
@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.browser)
 
         navigation_bar = QToolBar('Navigation')
-        navigation_bar.setIconSize(QSize(48, 48))
+        navigation_bar.setIconSize(QSize(64, 64))
         self.addToolBar(navigation_bar)
 
         reload_button = QAction(QIcon('icons/reloadGeo.png'), 'Reload', self)
@@ -43,31 +43,18 @@ class MainWindow(QMainWindow):
 
         # add buttons to the Nav bar
         navigation_bar.addAction(reload_button)
-        navigation_bar.addAction(marker_button)
         navigation_bar.addAction(hull_button)
         navigation_bar.addAction(circle_button)
 
-        # 添加URL地址栏
+        # URL bar
         self.urlbar = QLineEdit()
-        # 让地址栏能响应回车按键信号
-        self.urlbar.returnPressed.connect(self.navigate_to_url)
+        # react to the return press to draw marks like URL editer
+        self.urlbar.returnPressed.connect(self.searchUsers)  #sj tmp
 
         navigation_bar.addSeparator()
+        navigation_bar.addAction(QAction(QIcon('icons/userid.png'),'', self))
         navigation_bar.addWidget(self.urlbar)
-
-        # 让浏览器相应url地址的变化
-        self.browser.urlChanged.connect(self.renew_urlbar)
-
-    def navigate_to_url(self):
-        q = QUrl(self.urlbar.text())
-        if q.scheme() == '':
-            q.setScheme('http')
-        self.browser.setUrl(q)
-
-    def renew_urlbar(self, q):
-        # 将当前网页的链接更新到地址栏
-        self.urlbar.setText(q.toString())
-        self.urlbar.setCursorPosition(0)
+        navigation_bar.addAction(marker_button)
 
     # load Geo Data From Cached file first. If not, request it from internet.
     def checkGeoData(self):
@@ -93,6 +80,12 @@ class MainWindow(QMainWindow):
         except:
             e = sys.exc_info()[0]
             #sj todo, popup msg
+        self.isSelectionChanged = True  #sj, once reload GeoData, change isSelectionChanged to ensure redraw
+
+    def searchUsers(self):
+        self.isSelectionChanged = True
+        self.graphHelper = None
+        self.drawMarkers()
 
     def drawMarkers(self):
         qUrl = QUrl('file:///mapMakers.html')
@@ -141,16 +134,19 @@ class MainWindow(QMainWindow):
                 self.userIds.add(data['userid'])
         #sj todo, add the userids to the combo box
 
+    #sj tmp. like a search bar, need redesign the GUI, if I want to add a combo box 
     def getSelectedUserids(self):
-        self.isSelectionChanged = True
-        return ['2014','1977']  #sj todo
+        idsTxt = self.urlbar.text()  #get user ids from search bar 
+        strParts = idsTxt.split(',') #sj!!! might be ' 15'
+        ids = [ p.lstrip().rstrip() for p in strParts]
+        return ids  #sj todo
 
 if __name__ == '__main__':
-    # 创建应用
+    # init the application
     app = QApplication(sys.argv)
-    # 创建主窗口
+    # init the main window
     window = MainWindow()
-    # 显示窗口
+    # show it
     window.show()
-    # 运行应用，并监听事件
+    # execute the app
     app.exec_()
