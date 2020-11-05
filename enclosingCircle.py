@@ -8,15 +8,17 @@ from itertools import combinations
 
 class Point:
     pivot = (0.0, 0.0)
-    def __init__(self, a, b):
+    def __init__(self, a, b, description=None, color=None):
         self.x = float(a) 
         self.y = float(b)
+        if description: self.title = description
+        if color: self.color = color
     def __getitem__(self, item):
         return (self.x, self.y)[item]
     def var(self):
         return (self.x, self.y)
     def __str__(self):
-        return "({},{})".format(self.x, self.y)
+        return "{} {}".format(self.x, self.y) 
     def __lt__(self, other):
         sa = signedArea(self.pivot, self.var(), other.var()) 
         if abs(sa) == 0 :
@@ -60,6 +62,8 @@ class Graph:
         # print(self) #sjdb
 
     def calcConvexHull(self):
+        if len(self.hullps) >0:
+            return self.hullps
         self.findPivot()
         self.radiusSort()
         self.hullps.append(self.points[0])

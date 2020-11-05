@@ -4,6 +4,7 @@ from enclosingCircle import *
 import urllib.request, json
 import random
 import matplotlib.colors as mcolors
+import argparse
 
 def reqAndSaveDataPoints():
     geoData = []
@@ -57,6 +58,51 @@ def haversine(coord1, coord2):
     
     return 2*R*math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
+def getGraphHelper(dataDictForDraw):
+    graphHelper = Graph()
+    for id in dataDictForDraw:
+        dataForDraw = dataDictForDraw[id]
+        color=random_color()
+        locList = [ Point(data['latitude'], data['longitude'], data['description'], color) for data in  dataForDraw]
+        # for p in locList:
+        #     print(p) #sjdb
+        graphHelper.points += locList 
+    return graphHelper
+
+def plotMarkers(graph):
+    gmap = gmplot.GoogleMapPlotter(-46.402902, 168.386174, 10, apikey='')
+    for p in graph.points:
+        gmap.marker(*p.var(), title=p.title, color=p.color)
+    gmap.draw("mapMakers.html")
+
+def plotConvexHull(graph):
+    gmap = gmplot.GoogleMapPlotter(-46.402902, 168.386174, 10, apikey='')
+    for p in graph.points:
+        gmap.marker(*p.var(), title=p.title, color=p.color)
+    cnvxPs = graph.calcConvexHull()
+    attractions_lats, attractions_lngs = zip(*[p.var() for p in cnvxPs])
+    gmap.polygon(attractions_lats, attractions_lngs, color='cornflowerblue', edge_width=2)
+    gmap.draw("mapConvex.html")
+
+def plotEnclosingCircle(graph):
+    gmap = gmplot.GoogleMapPlotter(-46.402902, 168.386174, 10, apikey='')
+    for p in graph.points:
+        gmap.marker(*p.var(), title=p.title, color=p.color)
+    cnvxPs = graph.calcConvexHull()
+    attractions_lats, attractions_lngs = zip(*[p.var() for p in cnvxPs])
+    gmap.polygon(attractions_lats, attractions_lngs, color='cornflowerblue', edge_width=2)
+    pCenter, circumPs = graph.findCirclPoints()
+    mxRSize = 0
+    for p in circumPs:
+        rSize = haversine(pCenter.var(), p.var())
+        mxRSize = rSize if rSize > mxRSize else mxRSize
+    print("circumPs len is %d" % len(circumPs)) #sjdb
+    gmap.polygon(*zip(*[p.var() for p in circumPs]), color='red', edge_width=3)
+    gmap.marker(*pCenter.var() , color='cornflowerblue')
+    gmap.text(*pCenter.var() , 'Circle center', color='blue')
+    gmap.circle(*pCenter.var(), mxRSize, color='ivory')    
+    gmap.draw("mapCircle.html")
+
 
 def main():
     geoData = []
@@ -87,38 +133,17 @@ def main():
         # print(dataDictForDraw) #sjdb
         sCmd = input("\nDo you want to draw an enclosing circle(c) or a polygon(p), (q) for quit?\n")
         while sCmd.rstrip().lstrip() != 'q':
-
-            gmap = gmplot.GoogleMapPlotter(-46.402902, 168.386174, 14, apikey='')
-            g = Graph()
-            for id in dataDictForDraw:
-                dataForDraw = dataDictForDraw[id]
-                locList = [ Point(data['latitude'], data['longitude']) for data in  dataForDraw]
-                # for p in locList:
-                #     print(p) #sjdb
-                # print([*zip(*locList)]) #sjdb
-                if len(locList) > 0:
-                    gmap.scatter(*zip(*locList), color=random_color(), size=40, marker=True)        
-                g.points += locList        
-
-            cnvPs = g.calcConvexHull()
+            graphHelper = getGraphHelper(dataDictForDraw)
+            plotMarkers(graphHelper)
 
             if 'p' in sCmd  :
                 # print("in draw polygon") #sjdb
-                attractions_lats, attractions_lngs = zip(*[p.var() for p in cnvPs])
-                gmap.polygon(attractions_lats, attractions_lngs, color='cornflowerblue', edge_width=2)
+                plotConvexHull(graphHelper)
+                os.system("start mapConvex.html")
             if  'c' in sCmd :
-                # print("in write circle") #sjdb
-                pCenter, circumPs = g.findCirclPoints()
-                mxRSize = 0
-                for p in circumPs:
-                    rSize = haversine(pCenter.var(), p.var())
-                    mxRSize = rSize if rSize > mxRSize else mxRSize
-                gmap.polygon(*zip(*[p.var() for p in g.minCirclePs]), color='red', edge_width=3)
-                gmap.marker(*pCenter.var() , color='cornflowerblue')
-                gmap.text(*pCenter.var() , 'Circle center', color='blue')
-                gmap.circle(*pCenter.var(), mxRSize, color='ivory')
-            gmap.draw('sjmap.html')
-            os.system("start sjmap.html")
+                # # print("in write circle") #sjdb
+                plotEnclosingCircle(graphHelper)
+                os.system("start mapCircle.html")
             sCmd = input("\nDo you want to draw an enclosing circle(c) or a polygon(p), (q) for quit?\n")
 
         print("\nInput the user's geo location that you want to draw on the map: (q for quit)")
