@@ -48,6 +48,9 @@ class MainWindow(QMainWindow):
 
         # URL bar
         self.urlbar = QLineEdit()
+        font = self.urlbar.font()
+        font.setPointSize(20)
+        self.urlbar.setFont(font) 
         # react to the return press to draw marks like URL editer
         self.urlbar.returnPressed.connect(self.searchUsers)  #sj tmp
 
