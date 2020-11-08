@@ -96,7 +96,6 @@ def plotEnclosingCircle(graph):
     for p in circumPs:
         rSize = haversine(pCenter.var(), p.var())
         mxRSize = rSize if rSize > mxRSize else mxRSize
-    print("circumPs len is %d" % len(circumPs)) #sjdb
     gmap.polygon(*zip(*[p.var() for p in circumPs]), color='red', edge_width=3)
     gmap.marker(*pCenter.var() , color='cornflowerblue')
     gmap.text(*pCenter.var() , 'Circle center', color='blue')
