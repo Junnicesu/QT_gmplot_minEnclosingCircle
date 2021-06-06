@@ -1,0 +1,6 @@
+GUI:
+1, no location json file:
+
+2, map*.html not exist.
+
+3, map*.html exist and no selection change, just reload the map
